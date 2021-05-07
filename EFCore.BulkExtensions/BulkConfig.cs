@@ -230,6 +230,8 @@ namespace EFCore.BulkExtensions
         internal OperationType OperationType { get; set; }
 
         internal object SynchronizeFilter { get; private set; }
+
+        public Func<Microsoft.EntityFrameworkCore.DbContext, OperationType, string, string> SqlInterceptor { get; set; }
     }
 
     public class StatsInfo
