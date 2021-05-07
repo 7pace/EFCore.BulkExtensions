@@ -11,6 +11,7 @@ using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -399,9 +400,17 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             await context.Database.ExecuteSqlRawAsync(preparingQuery, cancellationToken).ConfigureAwait(false);
         }
 
-        private void ExecuteSql(DbContext context, TableInfo tableInfo, string query, params object[] parameter)
+        private void ExecuteSql(DbContext context, TableInfo tableInfo, string query, IEnumerable<object> parameters = null)
         {
-            context.Database.ExecuteSqlRaw(PrepareQuery(context, tableInfo, query), parameter);
+            var preparingQuery = PrepareQuery(context, tableInfo, query);
+
+            if (parameters != null && parameters.Any())
+            {
+                context.Database.ExecuteSqlRaw(preparingQuery, parameters);
+                return;
+            }
+
+            context.Database.ExecuteSqlRaw(preparingQuery);
         }
 
         private string PrepareQuery(DbContext context, TableInfo tableInfo, string query)
