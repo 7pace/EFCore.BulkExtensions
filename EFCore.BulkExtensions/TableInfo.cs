@@ -187,6 +187,7 @@ namespace EFCore.BulkExtensions
                                                                       a.ClrType.Name.StartsWith("SByte") ||
                                                                       a.ClrType.Name.StartsWith("Int") ||
                                                                       a.ClrType.Name.StartsWith("UInt") ||
+                                                                      a.ClrType.Name.StartsWith("Guid") ||
                                                                       (isSqlServer && a.ClrType.Name.StartsWith("Decimal"))) &&
                                                                     !a.ClrType.Name.EndsWith("[]") && 
                                                                     a.ValueGenerated == ValueGenerated.OnAdd
@@ -278,12 +279,12 @@ namespace EFCore.BulkExtensions
                 }  
                 if (AreSpecifiedPropertiesToInclude)
                 {
-                    properties = properties.Where(a => BulkConfig.PropertiesToInclude.Contains(a.Name));
+                    properties = properties.Where(a => BulkConfig.PropertiesToExclude.Contains($"{a.DeclaringEntityType.ClrType.Name}.*") || BulkConfig.PropertiesToInclude.Contains(a.Name));
                     ValidateSpecifiedPropertiesList(BulkConfig.PropertiesToInclude, nameof(BulkConfig.PropertiesToInclude));
                 }
                 if (AreSpecifiedPropertiesToExclude)
                 {
-                    properties = properties.Where(a => !BulkConfig.PropertiesToExclude.Contains(a.Name));
+                    properties = properties.Where(a => !BulkConfig.PropertiesToExclude.Contains($"{a.DeclaringEntityType.ClrType.Name}.*") && !BulkConfig.PropertiesToExclude.Contains(a.Name));
                     ValidateSpecifiedPropertiesList(BulkConfig.PropertiesToExclude, nameof(BulkConfig.PropertiesToExclude));
                 }
             }
@@ -445,7 +446,9 @@ namespace EFCore.BulkExtensions
             {
 
                 if (!FastPropertyDict.Any(a => a.Key == configSpecifiedPropertyName) &&
-                    !configSpecifiedPropertyName.Contains(".") && // Those with dot "." skiped from validating for now since FastPropertyDict here does not contain them
+                    !configSpecifiedPropertyName.Contains(".") && 
+                    !configSpecifiedPropertyName.Contains("*") &&
+                    // Those with dot "." skiped from validating for now since FastPropertyDict here does not contain them
                     !(specifiedPropertiesListName == nameof(BulkConfig.PropertiesToIncludeOnUpdate) && configSpecifiedPropertyName == "") // In PropsToIncludeOnUpdate empty is allowed as config for skipping Update
                    )
                 {
@@ -701,6 +704,8 @@ namespace EFCore.BulkExtensions
                             idValue = (int)value;
                         else if (idType == typeof(ulong))
                             idValue = (ulong)value;
+                        else if (idType == typeof(Guid))
+                            idValue = Guid.Empty;
                         else
                             idValue = (long)value;
 
